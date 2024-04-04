@@ -8,7 +8,7 @@ const f_write_pin = async function(
     n_pin, 
     n_pin_state,
 ){
-    // console.log(`pin:${n_pin}:${n_pin_state}`)
+    console.log(`pin:${n_pin}:${n_pin_state}`)
 }
 
 
@@ -31,7 +31,8 @@ const f_o_stepper_nema = function(
 
 }
 const f_o_stepper_28BYJ_48__with_ULN2003 = function(
-    a_n_pin__uln_2003
+    a_n_pin__uln_2003, 
+    f_write_state_from_n_pin_n_state
 ){
 
     let o_stepper = new O_stepper(
@@ -43,6 +44,7 @@ const f_o_stepper_28BYJ_48__with_ULN2003 = function(
         null, 
         a_n_pin__uln_2003
     );
+    o_stepper.f_write_state_from_n_pin_n_state = f_write_state_from_n_pin_n_state
 
     o_stepper.n_fullstepping_steps_per_round = 2048
     return o_stepper
@@ -70,10 +72,10 @@ const f_update_rpm = function(
     let n_steps_per_minute = o_stepper.n_steps_per_round * n_rpm
     o_stepper.n_micsec_between_step = (60*1000*1000)/n_steps_per_minute
 }
-const f_step_uln_2003 = async function(o_stepper){
+const f_step_uln_2003 = async function(o_stepper, f_write_pin_){
     let n_micsec_now = performance.now()*1000;
     let n_micsec_delta = n_micsec_now -o_stepper.n_micsec_last_step
-    console.log({n_micsec_delta})
+    // console.log({n_micsec_delta})
 
     if((n_micsec_delta) < o_stepper.n_micsec_between_step){
         // console.log('waiting for next step')
@@ -86,18 +88,28 @@ const f_step_uln_2003 = async function(o_stepper){
     if(o_stepper.n_step < 0){
         o_stepper.n_step = n_substep-1
     }
+
     let n_pin = o_stepper.v_a_n_pin__uln_2003[o_stepper.n_step]
-    if(!b_half_stepping){
-        await f_write_pin(
-            o_stepper.v_n_pin__uln_2003_write_last, 
-            0
+
+    for(let n of o_stepper.v_a_n_pin__uln_2003){
+        let b_high = n == n_pin
+        
+        await o_stepper.f_write_state_from_n_pin_n_state(
+            n,
+            b_high, 
         )
-        await f_write_pin(
-            n_pin, 
-            1
-        )
-        o_stepper.v_n_pin__uln_2003_write_last = n_pin
     }
+    // if(!b_half_stepping){
+    //     await f_write_pin(
+    //         o_stepper.v_n_pin__uln_2003_write_last, 
+    //         0
+    //     )
+    //     await f_write_pin(
+    //         n_pin, 
+    //         1
+    //     )
+    //     o_stepper.v_n_pin__uln_2003_write_last = n_pin
+    // }
     o_stepper.n_micsec_last_step = n_micsec_now
 
 }
@@ -110,5 +122,4 @@ export {
     f_update_rpm,
     f_step_uln_2003,
     f_update_n_stepping_mode_uln_2003,
-    
 }

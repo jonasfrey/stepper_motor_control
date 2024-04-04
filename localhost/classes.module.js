@@ -26,6 +26,7 @@ class O_stepper{
         this.n_rpm = null
         this.n_steps_per_round = null
         this.n_fullstepping_steps_per_round = null;
+        this.f_write_state_from_n_pin_n_state = null;
     }
 }
 
